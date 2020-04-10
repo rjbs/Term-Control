@@ -45,13 +45,6 @@ enter_underline_mode
 =cut
 
 
-sub raw {
-  my ($s) = @_;
-  $s =~ s/([^\p{Print}])/'<'.unpack('H*',$1).'>'/erg;
-  #join(' ', unpack('h*', shift) =~ m/../g);
-}
-
-
 sub tparm {
   my ($self, $cap, @params) = @_;
 
@@ -183,22 +176,6 @@ sub tparm {
   }
 
   return join '', @out;
-}
-
-1;
-
-__END__
-  my $out = join '', @out;
-
-  if ($tput ne $out) {
-    say "mismatch $cap:";
-    say "args: @params";
-    say "tput: ", raw $tput;
-    say "  in: ", raw $ti->getstr($cap);
-    say " out: ", raw $out;
-  }
-
-  return $out;
 }
 
 1;
