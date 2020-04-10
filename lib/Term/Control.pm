@@ -41,6 +41,10 @@ my @methods = (
   [ cursor_right => 'cuf1' ],
 
   [ cursor_home  => 'home' ],
+
+  [ cursor_invisible => 'civis' ],
+  [ cursor_visible   => 'cvvis' ],
+  [ cursor_reset     => 'cnorm' ],
 );
 
 for my $pair (@methods) {
