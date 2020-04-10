@@ -31,16 +31,16 @@ has _terminfo => (
 );
 
 my @methods = (
-  [ clear_screen   => 'clear' ],
+  [ clear_screen => 'clear' ],
 
-  [ cursor_address => 'cup', '$row', '$column' ],
+  [ cursor_move  => 'cup', '$row', '$column' ],
 
-  [ cursor_down    => 'cud1' ],
-  [ cursor_up      => 'cuu1' ],
-  [ cursor_left    => 'cub1' ],
-  [ cursor_right   => 'cuf1' ],
+  [ cursor_down  => 'cud1' ],
+  [ cursor_up    => 'cuu1' ],
+  [ cursor_left  => 'cub1' ],
+  [ cursor_right => 'cuf1' ],
 
-  [ cursor_home    => 'home' ],
+  [ cursor_home  => 'home' ],
 );
 
 for my $pair (@methods) {
