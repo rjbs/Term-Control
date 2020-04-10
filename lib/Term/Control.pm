@@ -5,9 +5,10 @@ package Term::Control;
 use 5.020;
 use warnings;
 use strict;
-use experimental qw(signatures);
 
 use Moo;
+use experimental qw(signatures);
+
 use Types::Standard qw(Str);
 use Type::Utils qw(class_type);
 
@@ -46,7 +47,6 @@ for my $pair (@methods) {
   my ($method, $cap, @args) = @$pair;
   my $sig = join ',', '$self', @args;
   eval
-    "use experimental qw(signatures);".
     "sub $method ($sig) {".
     "  shift;".
     "  \$self->_tputs(\$self->_tparm(\$cap, \@_));".
