@@ -48,8 +48,7 @@ for my $pair (@methods) {
   my $sig = join ',', '$self', @args;
   eval
     "sub $method ($sig) {".
-    "  shift;".
-    "  \$self->_tputs(\$self->_tparm(\$cap, \@_));".
+    "  print shift->_expand_capability(\$cap, \@_);".
     "}";
   if (my $err = $@) {
     die "couldn't generate method $method: $err";
@@ -60,7 +59,7 @@ for my $pair (@methods) {
 # capability and args and returns a string for the target terminal. probably
 # deficient for esoteric terminals, but maybe we can get away with it in the
 # modern era where everything is an xterm anyway
-sub _tparm ($self, $cap, @params) {
+sub _expand_capability ($self, $cap, @params) {
   my $in =
     $self->_terminfo->getstr($cap) //
     $self->_terminfo->getnum($cap) //
@@ -192,13 +191,6 @@ sub _tparm ($self, $cap, @params) {
   }
 
   return join '', @out;
-}
-
-# this is nothing like a real tputs, which handles delays and padding. its here
-# as a convenient hook point but hopefully we'll never really need to upgrade
-# it
-sub _tputs ($self, $str) {
-  print $str;
 }
 
 1;
