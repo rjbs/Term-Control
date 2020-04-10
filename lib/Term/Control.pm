@@ -61,7 +61,10 @@ for my $pair (@methods) {
 # deficient for esoteric terminals, but maybe we can get away with it in the
 # modern era where everything is an xterm anyway
 sub _tparm ($self, $cap, @params) {
-  my $in = $self->_terminfo->getstr($cap);
+  my $in =
+    $self->_terminfo->getstr($cap) //
+    $self->_terminfo->getnum($cap) //
+    $self->_terminfo->getflag($cap);
 
   my @out;
   my @stack;
