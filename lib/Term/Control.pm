@@ -45,13 +45,20 @@ my @methods = (
 for my $pair (@methods) {
   my ($method, $cap, @args) = @$pair;
   my $sig = join ',', '$self', @args;
-  eval "use experimental qw(signatures); sub $method ($sig) { shift->tparm(\$cap, \@_) }";
+  eval "use experimental qw(signatures); sub $method ($sig) { shift->_tparm(\$cap, \@_) }";
   if (my $err = $@) {
     die "couldn't generate method $method: $err";
   }
 }
 
-sub tparm {
+# something like the traditional curses "tparm" method, which takes a
+# capability and args and returns a string for the target terminal
+#
+# probably deficient for esoteric terminals, and without a tputs() to emit the
+# completed string there's going to be problems with delays and padding, but
+# maybe in the modern era when everything is an xterm we can get away without
+# it
+sub _tparm {
   my ($self, $cap, @params) = @_;
 
   my $in = $self->_terminfo->getstr($cap);
