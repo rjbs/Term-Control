@@ -5,6 +5,7 @@ package Term::Control;
 use 5.020;
 use warnings;
 use strict;
+use experimental qw(signatures);
 
 use Moo;
 use Types::Standard qw(Str);
@@ -28,22 +29,27 @@ has _terminfo => (
   },
 );
 
-=pod
-clear_screen
-cursor_address
-cursor_down
-cursor_home
-cursor_invisible
-cursor_left
-cursor_normal
-cursor_right
-cursor_visible
-enter_blink_mode
-enter_bold_mode
-enter_reverse_mode
-enter_underline_mode
-=cut
+my @methods = (
+  [ clear_screen   => 'clear' ],
 
+  [ cursor_address => 'cup', '$row', '$column' ],
+
+  [ cursor_down    => 'cud1' ],
+  [ cursor_up      => 'cuu1' ],
+  [ cursor_left    => 'cub1' ],
+  [ cursor_right   => 'cuf1' ],
+
+  [ cursor_home    => 'home' ],
+);
+
+for my $pair (@methods) {
+  my ($method, $cap, @args) = @$pair;
+  my $sig = join ',', '$self', @args;
+  eval "use experimental qw(signatures); sub $method ($sig) { shift->tparm(\$cap, \@_) }";
+  if (my $err = $@) {
+    die "couldn't generate method $method: $err";
+  }
+}
 
 sub tparm {
   my ($self, $cap, @params) = @_;
