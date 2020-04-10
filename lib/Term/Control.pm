@@ -58,9 +58,7 @@ for my $pair (@methods) {
 # completed string there's going to be problems with delays and padding, but
 # maybe in the modern era when everything is an xterm we can get away without
 # it
-sub _tparm {
-  my ($self, $cap, @params) = @_;
-
+sub _tparm ($self, $cap, @params) {
   my $in = $self->_terminfo->getstr($cap);
 
   my @out;
