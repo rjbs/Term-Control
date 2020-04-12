@@ -71,12 +71,19 @@ sub _expand_capability ($self, $cap, @params) {
 
   my @out;
   my @stack;
+
+  $self->_evaluate_expr($in, \@params, \@stack, \@out);
+
+  return join '', @out;
+}
+
+sub _evaluate_expr ($self, $in, $params, $stack, $out, $t = undef) {
   while (length $in) {
 
     # take everything up to the first control sequence
     if ($in =~ s/^(?<take>[^%\$]+)//) {
       my ($take) = @+{qw(take)};
-      push @out, $take;
+      push @$out, $take;
       next;
     }
 
@@ -89,32 +96,32 @@ sub _expand_capability ($self, $cap, @params) {
 
     # %%   outputs `%'
     if ($in =~ s/^%%//) {
-      push @out, '%';
+      push @$out, '%';
       next;
     }
 
     # %[[:]flags][width[.precision]][doxXs]  as in printf
     if ($in =~ s/^(?<format>%:?[\-\+\# ]*(?:[0-9]+(?:\.[0-9]+)?)?[doxXs])//) {
       my ($format) = @+{qw(format)};
-      push @out, sprintf($format, pop @stack);
+      push @$out, sprintf($format, pop @$stack);
       next;
     }
 
     # %c   print pop() like %c in printf
     # %s   print pop() like %s in printf
     if ($in =~ s/^%[sc]//) {
-      die "need 1 item from stack\n" unless @stack > 0;
-      push @out, pop @stack;
+      die "need 1 item from stack\n" unless @$stack > 0;
+      push @$out, pop @$stack;
       next;
     }
 
     # %p[1-9] push i'th parameter
     if ($in =~ s/^%p(?<i>[1-9])//) {
       my ($i) = @+{qw(i)};
-      die "param $i requested for push, but only ".@params." passed\n" if $i > @params;
-      my $param = $params[$i-1];
+      die "param $i requested for push, but only ".@$params." passed\n" if $i > @$params;
+      my $param = $params->[$i-1];
       die "param $i is undefined, can't push\n" unless defined $param;
-      push @stack, $param;
+      push @$stack, $param;
       next;
     }
 
@@ -127,20 +134,20 @@ sub _expand_capability ($self, $cap, @params) {
     # %'c' char constant c
     if ($in =~ s/^%'(?<char>.)'//) {
       my ($char) = @+{qw(char)};
-      push @stack, $char;
+      push @$stack, $char;
       next;
     }
 
     # %{nn} integer constant nn
     if ($in =~ s/^%\{(?<nn>[0-9]+)}//) {
       my ($nn) = @+{qw(nn)};
-      push @stack, $nn;
+      push @$stack, $nn;
       next;
     }
 
     # %l   push strlen(pop)
     if ($in =~ s/^%l//) {
-      push @stack, length(pop @stack);
+      push @$stack, length(pop @$stack);
       next;
     }
 
@@ -149,10 +156,10 @@ sub _expand_capability ($self, $cap, @params) {
     # %= %> %< logical operations: push(pop() op pop())
     if ($in =~ s/^%(?<op>[+\-\*\/m\&\|\^=><])//) {
       my ($op) = @+{qw(op)};
-      die "need 2 items from stack\n" unless @stack > 0;
-      my $y = pop @stack;
-      my $x = pop @stack;
-      push @stack,
+      die "need 2 items from stack\n" unless @$stack > 0;
+      my $y = pop @$stack;
+      my $x = pop @$stack;
+      push @$stack,
         $op eq '+' ? $x +  $y :
         $op eq '-' ? $x -  $y :
         $op eq '*' ? $x *  $y :
@@ -168,14 +175,22 @@ sub _expand_capability ($self, $cap, @params) {
       next;
     }
 
-    # XXX %A, %O logical AND and OR operations (for conditionals)
+    # %A, %O logical AND and OR operations (for conditionals)
+    if ($in =~ s/^%(?<op>[AO])//) {
+      my ($op) = @+{qw(op)};
+      my $x = pop @$stack;
+      my $y = pop @$stack;
+      if ($op eq 'A') { push @$stack, ($x != 0 && $y != 0) ? 1 : 0 }
+      if ($op eq 'O') { push @$stack, ($x != 0 || $y != 0) ? 1 : 0 }
+      next;
+    }
 
     # %! %~ unary operations (logical and bit complement): push(op pop())
     if ($in =~ s/^%(?<op>[\!\~])//) {
       my ($op) = @+{qw(op)};
-      die "need 1 item from stack\n" unless @stack > 0;
-      my $v = pop @stack;
-      push @stack,
+      die "need 1 item from stack\n" unless @$stack > 0;
+      my $v = pop @$stack;
+      push @$stack,
         $op eq '!' ? !$v :
         $op eq '~' ? ~$v :
           die "impossible unary op $op\n";
@@ -184,17 +199,37 @@ sub _expand_capability ($self, $cap, @params) {
 
     # %i   add 1 to first two parameters (for ANSI terminals)
     if ($in =~ s/^%i//) {
-      $params[0]++ if exists $params[0];
-      $params[1]++ if exists $params[1];
+      $params->[0]++ if exists $params->[0];
+      $params->[1]++ if exists $params->[1];
       next;
     }
 
-    # XXX %? expr %t thenpart %e elsepart %;
+    if ($in =~ s/^%t//) {
+      die "%t outside of %?...%;\n" unless $t;
+      die "need 1 item from stack\n" unless @$stack > 0;
+      my $bool = pop @$stack;
+      return if $bool == 0;
+      $$t = 1;
+      next;
+    }
+
+    # %? expr %t thenpart %e elsepart %;
+    if ($in =~ s/^%\?(?<if>.*?)(?<!%)%;//) {
+      my ($if) = $+{if};
+      my @subexpr = split /(?<!%)%e/, $if;
+
+      SUBEXPR: for my $p (@subexpr) {
+        my $t = 0;
+        $self->_evaluate_expr($p, $params, $stack, $out, \$t);
+        last SUBEXPR if $t;;
+      }
+
+      next;
+    }
 
     die "unknown % sequence $in\n";
   }
 
-  return join '', @out;
 }
 
 1;
