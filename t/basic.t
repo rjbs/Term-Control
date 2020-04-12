@@ -1,6 +1,8 @@
 use v5.20.0;
 use warnings;
 
+use experimental qw(signatures);
+
 use Term::Control;
 use Test::More;
 use Test::BinaryData;
@@ -57,28 +59,17 @@ is_binary(
   'setb is correct in terminfo',
 );
 
-{
+sub expand_ok ($cap, $param, $want, $desc) {
   my @stack;
   my @out;
-  $tc->_evaluate_expr($xterm_setb, [3], \@stack, \@out);
+  $tc->_evaluate_expr($cap, $param, \@stack, \@out);
 
-  is_binary(
-    join(q{}, @out),
-    "\e[46m",
-    "let's set our xterm BG to 3",
-  );
+  local $Test::Builder::Level = $Test::Builder::Level + 1;
+  is_binary(join(q{}, @out), $want, $desc);
 }
 
-{
-  my @stack;
-  my @out;
-  $tc->_evaluate_expr($xterm_setb, [7], \@stack, \@out);
-
-  is_binary(
-    join(q{}, @out),
-    "\e[47m",
-    "let's set our xterm BG to 7",
-  );
-}
+expand_ok($xterm_setb, [3], "\e[46m", "xterm setb [3]");
+expand_ok($xterm_setb, [7], "\e[47m", "xterm setb [7]");
+expand_ok($xterm_setb, [6], "\e[43m", "xterm setb [6]");
 
 done_testing;
