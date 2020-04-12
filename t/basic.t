@@ -72,4 +72,11 @@ expand_ok($xterm_setb, [3], "\e[46m", "xterm setb [3]");
 expand_ok($xterm_setb, [7], "\e[47m", "xterm setb [7]");
 expand_ok($xterm_setb, [6], "\e[43m", "xterm setb [6]");
 
+expand_ok(
+  "%?%p1%p2%A%p3%p4%A%O%tTRUE%eFALSE%;",
+  [ 0, 0, 1, 1 ],
+  "TRUE",
+  "some testing of %O and %A",
+);
+
 done_testing;
