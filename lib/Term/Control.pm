@@ -152,7 +152,7 @@ sub _expand_capability ($self, $cap, @params) {
       die "need 2 items from stack\n" unless @stack > 0;
       my $y = pop @stack;
       my $x = pop @stack;
-      push @stack, 
+      push @stack,
         $op eq '+' ? $x +  $y :
         $op eq '-' ? $x -  $y :
         $op eq '*' ? $x *  $y :
@@ -190,7 +190,7 @@ sub _expand_capability ($self, $cap, @params) {
     }
 
     # XXX %? expr %t thenpart %e elsepart %;
-    
+
     die "unknown % sequence $in\n";
   }
 
